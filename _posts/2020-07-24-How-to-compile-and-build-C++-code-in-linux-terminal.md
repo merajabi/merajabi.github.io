@@ -18,7 +18,7 @@ I hope I can put it in a simple, clear and understandable way.
 
 * Note: The order of the parameters that you pass to the Gnu compiler is important!
 
-# Most simple way using GNU C++ compiler
+## Most simple way using GNU C++ compiler
 
 Using the gnu C++ compiler on Linux is as simple as typing the following command on the terminal, where ```main.cpp``` is the name of the file that contains your C++ code.
 
@@ -61,3 +61,17 @@ So we can assume that this is the simplest form of the compile command for any s
 ```bash
 $ g++ -std=c++11 -Wall -Wextra -Wpedantic -o myapp main.cpp
 ```
+
+## How to build against static libraries
+to be continued ...
+
+## How to build against dynamic libraries
+to be continued ...
+
+## How to generate a static library
+to be continued ...
+
+## How to generate a dynamic library
+to be continued ...
+
+
