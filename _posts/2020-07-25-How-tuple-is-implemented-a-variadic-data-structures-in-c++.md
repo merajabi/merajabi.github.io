@@ -572,6 +572,7 @@ We can continue to implement various constructors and operators, but this is a f
 to be continued ...
 
 ## References
-[riptutorial](https://riptutorial.com/cplusplus/example/19276/variadic-template-data-structures)
-[mitchnull](https://mitchnull.blogspot.com/2012/06/c11-tuple-implementation-details-part-1.html)
+
+* [riptutorial](https://riptutorial.com/cplusplus/example/19276/variadic-template-data-structures)
+* [mitchnull](https://mitchnull.blogspot.com/2012/06/c11-tuple-implementation-details-part-1.html)
 
