@@ -1,5 +1,6 @@
 ---
 layout: post
+comments: true
 title: How tuple is implemented, A variadic data structures in c++
 tags: [tuple, variadic, data structure, C++]
 color: black

@@ -27,7 +27,7 @@ color_image: /assets/img/lineart.png                    # A bit transparent for 
 katex: true                                             # Enable if using math markup
 google_analytics:                                       # Tracking ID, e.g. "UA-000000-01"
 cookie_consent: false                                   # To respect the usage of cookies
-disqus_shortname:                                       # Your discus shortname for comments
+disqus_shortname: raha-blog                             # Your discus shortname for comments
 layout_variables:                                       # Open the "_sass > base" folder, and open "_variables.scss"
 footer_icons:                                           # In _data/social.yml
 share_buttons:                                          # In _data/social.yml

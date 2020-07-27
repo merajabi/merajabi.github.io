@@ -1,5 +1,6 @@
 ---
 layout: post
+comments: true
 title: How to compile and build C++ code in linux terminal
 tags: [g++, clang, compile, build, C++]
 color: black
