@@ -2,7 +2,7 @@
 layout: post
 comments: true
 title: What is variant, The perfect application of visitor pattern
-tags: [tuple, variadic, data structure, C++]
+tags: [union, variant, visitor, variadic, design pattern, C++]
 color: black
 author: raha
 feature-img: "assets/img/pexels/pexels-pixabay-1920x1280.jpg"
