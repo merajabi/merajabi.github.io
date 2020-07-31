@@ -11,7 +11,7 @@ category: programming/CPP
 excerpt_separator: <!--more-->
 ---
 
-Do you remember the union construct in C language? As of C++11, you can use any object as part of the Union construct, but it's not type-safe. In c ++ 17 ```std::variant``` STL is added as a type-safe implementation of a union-like construct.
+Do you remember the union construct in C language? As of C++11, you can use any object as part of the Union construct, but it's not type-safe. In c++17 ```std::variant``` is added as a type-safe implementation of a union-like construct.
 
 <!--more-->
 
@@ -46,9 +46,9 @@ If you are new to design patterns watch these two on youtube.
 
 ## Why variant is hard!
 
-Note: In this post I assume that we will compile with C++14 for the sake of simplicity. Changing this code to C++11 is straightforward.
+Note: For the sake of simplicity, In this post I assume that we will compile with C++14 . Changing this code to C++11 is straightforward.
 
-ok Suppose we want to implement a variant class of some types, so we should have the following structure.
+ok, Suppose we want to implement a variant class of some types, so we should have the following structure.
 
 ```cpp
 template <typename ... Types>
@@ -57,7 +57,7 @@ struct MyVariant {
 };
 ```
 
-We looked at the array of characters with a length equal to the maximum of all sizes, and ```std::max``` is defined in c++14 ```constexpr``` so there is no problem.
+We created the array of characters with a length equal to the maximum of all sizes. ```std::max``` is defined ```constexpr``` in c++14 so there is no problem.
 
 Of course, each of our types will fit in this array, but we've overlooked two things. 
 
@@ -65,9 +65,7 @@ First, char is aligned to one byte. What if our type has a bigger alignment requ
 
 Second, what is our current active type? You know that only one of the type is active in the "variant" class at any point in its life.
 
-So we may need an index to track which one is active, and later we'll call our type's constructor and destructor accordingly.
-
-Therefore, we can change the definition of our class as follows
+So we may need an index to track which one is active. Therefore, we can change the definition of our class as follows
 
 ```cpp
 template <typename ... Types>
@@ -77,11 +75,11 @@ struct MyVariant {
 };
 ```
 
-ok now the important observation:
+ok, now the important observation:
 
 The fact that we are responsible for calling the constructor and destructor of different types in this block of memory is our problem.
 
-But this problem is not difficult, because we should know which type is currently active! It's difficult, because we don't have an easy way to create any objects at runtime in C++!
+But this problem is not difficult, because we should know which type is currently active! It's difficult, because we don't have an easy way to create any objects of an arbitrary at runtime in C++!
 
 Consider the following code: We called a constructor on a block of memory, then saved and retrieved some data, and finally called the destructor. everything seems fine.
 
@@ -122,9 +120,9 @@ int main () {
 }
 ```
 
-So what's the problem? The problem is that T1 and T2 are definitions of the compilation time. You cannot save them anywhere and use them at runtime!
+So what's the problem? The problem is that T1 and T2 are compile-time definitions. You cannot save them anywhere and use them at runtime!
 
-We need something like that, but we don't have it! We cannot store a type in a variable and later create an object from this type in c++.
+We need something like that, but we don't have it! We cannot store a name of a type in a variable and later create an object from this type in c++.
 
 For this to work, you need reflection!
 
@@ -133,6 +131,7 @@ For this to work, you need reflection!
 	using T1 = int;
 	using T2 = std::string;
 
+	// this code is not correct and will not compile !!!
 	imaginary_c++_type mytypes[2] = {T1, T2};
 
 	MyVariant<T1,T2> obj;
@@ -149,7 +148,7 @@ For this to work, you need reflection!
 
 Ok, I hope the problem is clear now, so what's the solution?
 
-A solution might look like this: We create a function that does something with any type we need and store a pointer to each function in an array of function pointers. Later at runtime we can call these functions based on their index.
+The solution might look like this: We create a function that does something with any type we need and store a pointer to each function in an array of function pointers. Later at runtime we can call these functions based on their index.
 
 ```cpp
 using T1 = int;
@@ -165,9 +164,9 @@ void caller(void *data){
 const CallerType funcArray[2]={caller<T1>,caller<T2>};
 ```
 
-It seems like a cool idea, and we could go a little further, instead of doing something directly in this function, we can pass a cast object to another function that we got from the input!
+It seems like a cool idea, and we could go a little further, instead of doing something directly in this function, we can pass a type-casted object to another function that we got from the input!
 
-Woow, doesn't seem interesting? As you can see in the list below, it is obvious that I will be using visitors. What I do by definition is the visitor pattern and you will soon see how powerful it is.
+Woow, doesn't seem interesting? As you can see in the list below, it is obvious that I am using visitors. What I do by definition is the visitor pattern and you will soon see how powerful it is.
 
 ```cpp
 using T1 = int;
@@ -188,7 +187,7 @@ void caller(const IVisitor& functor, void *data){
 const CallerType funcArray[2]={caller<T1>,caller<T2>};
 ```
 
-lets go on an implement a printer visitor, it will look like as follow
+lets go on an implement a printer visitor, it will look like this:
 
 ```cpp
 struct Printer : public IVisitor{
@@ -201,7 +200,7 @@ struct Printer : public IVisitor{
 };
 ```
 
-ok, following the same analogy, we can write constructor, destructor, and assignment visitor, and the full listing for our simple example is as follows.
+ok, following the same analogy, we can write constructor, destructor, and assignment visitor, and the full listing for our simple example is as follows:
 
 ```cpp
 #include <iostream>
@@ -332,21 +331,28 @@ I renamed the funcArray to actionArray and it is now a static array in the visit
 This form opens my hand to define a signature of a function, which is saved in actionArray as a template.
 If you look up, the CallerType was defined as follows:
 
- ``` using CallerType = void(*)(const IVisitor&, void*);```  .
+```cpp
+using CallerType = void(*)(const IVisitor&, void*);
+```
 
 In addition, the function was template. There was no sign of a template parameter in the signature.
 However, I cannot pass Lambda to this function because the Lambda type is only known to the compiler. So I changed this signature as follows:
 
- ``` template <typename Functor> using VisitorSignature = void(Functor, void*);``` 
+```cpp
+template <typename Functor> 
+using VisitorSignature = void(Functor, void*);
+```
 
-Now "Functor" can be any type, to properly express it any functor.
+Now "Functor" can be any type, to properly express it: any functor!
 Here we have another change too. Visit Do not call the visitor directly on the object.
 
-First, the "TypeCastVisitor" object is called, which, as the name suggests, type-cast the data and then calls the specified visitor on it. This will open our hands very much when implementing visitors. If you look at the end of this listing above the main function, you will see how differently the visitors are implemented.
+First, the "TypeCastVisitor" object is called, which, as the name suggests, type-cast the data and then calls the specified visitor on it. This will open our hands very much when implementing visitors. 
+
+If you look at the end of following listing, just above the main function, you will see how differently the visitors are implemented.
 
 In the main function I also showed how to use Lambda as a visitor.
 
-So far I have implemented the building blocks for creating a Variant class. But as you can see, we do the bookkeeping by hand. As you may suspect, the rest is straightforward. We will call these visitors in the variant member function to automate the process.
+So far I have implemented the building blocks for creating a Variant class. But as you can see, we still do the bookkeeping by hand. As you may suspect, the rest is straightforward. We will call these visitors in the variant member function to automate the process.
 
 In the next post I will present a more complete implementation of the variant class.
 
@@ -371,9 +377,9 @@ template <template <typename> class RV,typename Functor, typename ... Types>
 struct Visitor {
 	static const std::function<VisitorSignature<Functor>> actionArray[sizeof...(Types)];
 
-    void visit(Functor functor, Variant<Types...>& obj) const {
+	void visit(Functor functor, Variant<Types...>& obj) const {
 		actionArray[obj.index](functor,obj.data);
-    }
+	}
 };
 
 template <template <typename> class RV,typename Functor, typename ... Types>
@@ -407,16 +413,16 @@ struct Variant {
 
 struct default_construct_visitor {
 	template <typename T>
-    void operator()(T& data) const {
+	void operator()(T& data) const {
 		::new(&data) T();
-    }
+	}
 };
 
 struct destroy_visitor {
 	template <typename T>
-    void operator()(T& data) const {
+	void operator()(T& data) const {
 		data.~T();
-    }
+	}
 };
 
 struct print_visitor {
@@ -432,9 +438,9 @@ struct set_visitor {
 	set_visitor(const T& temp):temp(temp){}
 	void set(const T& t){ temp = t; }
 
-    void operator()(T& data) const {
+	void operator()(T& data) const {
 		data =  temp;
-    }
+	}
 
 	template <typename U>
 	void operator () (U&) const {}
@@ -445,9 +451,9 @@ struct get_visitor {
 	T temp;
 	T get() const {return temp;};
 
-    void operator()(T& data) {
+	void operator()(T& data) {
 		temp = data;
-    }
+	}
 
 	template <typename U>
 	void operator () (U&) const {}
