@@ -4,8 +4,11 @@ size=$2
 compress=$3
 name=$4
 
-echo "usage: optjpg.sh fullpath compression-ratio generated-filename";
+echo "usage: optjpg.sh fullpath size compression-ratio generated-filename";
 echo
+if [ -z "$path" ]; then
+	exit 1;
+fi;
 
 list=$(ls $path/* | grep -P ".+\.(:?png|jpeg|jpg)")
 
