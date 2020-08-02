@@ -15,6 +15,10 @@ I am sure there are many good refrences for learning the C++ compilation and bui
 but i will say it again! and I hope it will be helpful.
 <!--more-->
 
+Table of Contents
+* TOC
+{:toc}
+
 I hope I can put it in a simple, clear and understandable way.
 
 * Note: The order of the parameters that you pass to the Gnu compiler is important!

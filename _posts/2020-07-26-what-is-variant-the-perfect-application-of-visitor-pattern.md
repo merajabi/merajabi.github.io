@@ -14,6 +14,9 @@ excerpt_separator: <!--more-->
 Do you remember the union construct in C language? As of C++11, you can use any object as part of the Union construct, but it's not type-safe. In c++17 ```std::variant``` is added as a type-safe implementation of a union-like construct.
 
 <!--more-->
+Table of Contents
+* TOC
+{:toc}
 
 ## Introduction
 
@@ -48,7 +51,7 @@ If you are new to design patterns watch these two on youtube.
 * [video on visitor pattern](https://www.youtube.com/watch?v=TeZqKnC2gvA)
 
 
-## Why variant is hard!
+## Why variant is hard?!
 
 Note: For the sake of simplicity, In this post I assume that we will compile with C++14 . Changing this code to C++11 is straightforward.
 
@@ -323,7 +326,7 @@ int main () {
 
 ```
 
-## How to implement a really variable variant
+## How to implement a really variadic variant
 
 Ok, so far we have seen what a variant is, why it is difficult and how to implement it using the visitor pattern.
 However, you noticed that our implementation is not really variable so far, we only looked at two types.
@@ -523,7 +526,548 @@ int main(){
 }
 
 ```
+## Details of complete variant implementation
 
+We have seen some basic building blocks so far, now is the time to complete our variant class. We'll add a few more tools first and will be there soon.
+
+First of all, we need a tool for copying and moving objects of the variant class. Therefore we will expand our visitor as follows:
+
+```cpp
+template <typename Functor>
+using VisitorSignature = void(Functor, void*);
+
+template <typename Functor>
+using VisitorSignatureCopy = void(Functor, void*,const void*);
+
+template <typename Functor>
+using VisitorSignatureMove = void(Functor, void*, void*);
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+struct Visitor {
+	static const std::function<VisitorSignature<Functor>> actionArray[sizeof...(Types)];
+	static const std::function<VisitorSignatureCopy<Functor>> actionArrayCopy[sizeof...(Types)];
+	static const std::function<VisitorSignatureMove<Functor>> actionArrayMove[sizeof...(Types)];
+
+	void visit(Functor functor, Variant<Types...>& obj) const {
+		actionArray[obj.index](functor,obj.data);
+	}
+	void visit(Functor functor, Variant<Types...>& obj1,const Variant<Types...>& obj2) const {
+		actionArrayCopy[obj1.index](functor,obj1.data,obj2.data);
+	}
+	void visit(Functor functor, Variant<Types...>& obj1,Variant<Types...>&& obj2) const {
+		actionArrayMove[obj1.index](functor,obj1.data,obj2.data);
+	}
+};
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+const std::function<VisitorSignature<Functor>> Visitor<RV,Functor,Types...>::actionArray[sizeof...(Types)] = {RV<Types>()...};
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+const std::function<VisitorSignatureCopy<Functor>> Visitor<RV,Functor,Types...>::actionArrayCopy[sizeof...(Types)] = {RV<Types>()...};
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+const std::function<VisitorSignatureMove<Functor>> Visitor<RV,Functor,Types...>::actionArrayMove[sizeof...(Types)] = {RV<Types>()...};
+
+template <typename T>
+struct TypeCastVisitor {
+
+	template <typename Functor>
+	void operator () (Functor functor, void* data) const {
+		functor(*reinterpret_cast<T*>(data));
+	}
+
+	template <typename Functor>
+	void operator () (Functor functor, void* data1, const void* data2) const {
+		functor(*reinterpret_cast<T*>(data1),*reinterpret_cast<const T*>(data2));
+	}
+
+	template <typename Functor>
+	void operator () (Functor functor, void* data1, void* data2) const {
+		functor(*reinterpret_cast<T*>(data1),static_cast<T&&>(*reinterpret_cast<T*>(data2)));
+	}
+};
+
+template <typename ... Types, typename Functor>
+void Visit(Functor functor, Variant<Types...>& obj){
+	Visitor<TypeCastVisitor,Functor,Types...> visitor;
+	visitor.visit(functor,obj);
+}
+template <typename ... Types, typename Functor>
+void Visit(Functor functor, Variant<Types...>& obj1,const Variant<Types...>& obj2){
+	Visitor<TypeCastVisitor,Functor,Types...> visitor;
+	visitor.visit(functor,obj1,obj2);
+}
+template <typename ... Types, typename Functor>
+void Visit(Functor functor, Variant<Types...>& obj1,Variant<Types...>&& obj2){
+	Visitor<TypeCastVisitor,Functor,Types...> visitor;
+	visitor.visit(functor,obj1,std::move(obj2));
+}
+
+```
+
+As you can see, I've added more functions, one that accepts an l-value variant for copying and another that accepts an r-value variant for moving.
+Now I can implement the copy and move as follows:
+
+
+```cpp
+struct copy_visitor {
+	template <typename T>
+	void operator()(T& data1,const T& data2) const {
+		data1 =  data2;
+	}
+};
+
+struct move_visitor {
+	template <typename T>
+	void operator()(T& data1,T&& data2) const {
+		data1 =  std::move(data2);
+	}
+};
+
+```
+
+ok, let's complete the variant class with these tools.
+In the list below, we've implemented the standard constructor, destructor, move and copy, constructors and assignment operators.
+As you can see, when we have the right tools, this is easy.
+
+
+```cpp
+template <typename ... Types>
+struct Variant {
+	static constexpr auto invalid_index = sizeof...(Types);
+	alignas( std::max({alignof(Types)...}) ) char data [ std::max({1ul, sizeof(Types)...}) ];
+	int index;
+
+	Variant():index(invalid_index){
+	}
+	~Variant(){
+		destroy();
+	}
+	Variant(const Variant& v){
+		Copy(v);
+	}
+	Variant& operator= (const Variant& v){
+		Copy(v);
+		return *this;
+	}
+	Variant(Variant&& v){
+		Move(std::move(v));
+	}
+	Variant& operator= (Variant&& v){
+		Move(std::move(v));
+		return *this;
+	}
+
+	void Copy(const Variant& v){
+		if(index != v.index){
+			destroy();
+			index = v.index;
+			Visit(default_construct_visitor{},*this);
+		}
+		Visit(copy_visitor{},*this,v);
+	}
+	void Move(Variant&& v){
+		if(index != v.index){
+			destroy();
+			index = v.index;
+			Visit(default_construct_visitor{},*this);
+		}
+		Visit(move_visitor{},*this,std::move(v));
+	}
+	void destroy(){
+		if(index < invalid_index){
+			Visit(destroy_visitor{},*this);
+			index = invalid_index;
+		}
+	}
+};
+
+```
+
+We're almost there, but let's add another handy tool so that, we can assign the contents of the variant directly from an object of the underlying type.
+so we can write code like this.
+
+```cpp
+int main() {
+Variant<int,std::string> obj1 = std::string("Hi");
+Variant<int,std::string> obj2;
+
+obj2 = 10;
+}
+```
+
+To do this, we need a pair of template constructor and copy assignment operator as follows:
+
+
+```cpp
+	template <typename T, typename std::enable_if< type_index<std::decay_t<T>, Types...>() < invalid_index , int>::type = 0>
+	Variant(T &&val) {
+		index = type_index<std::decay_t<T>, Types...>();
+		Visit(construct_visitor<std::decay_t<T>,std::decay_t<T>>{std::forward<T>(val)},*this);
+	}
+
+	template <typename T, typename std::enable_if< type_index<std::decay_t<T>, Types...>() < invalid_index , int>::type = 0>
+	Variant& operator= (T &&val) {
+		const auto other_index = type_index<std::decay_t<T>, Types...>();
+		if(index != other_index){
+			destroy();
+			index = other_index;
+			Visit(default_construct_visitor{},*this);
+		}
+		Visit(set_visitor<std::decay_t<T>>{std::forward<T>(val)},*this);
+		return *this;
+	}
+
+```
+
+As you can see, we have used a universal reference here and we should somehow restrict it, otherwise it matches with everything!
+
+The construct ```std::enable_if``` activates this function if and only if the type "T" matches one of the types in variadic parameters pack ```Types ...```,
+We also have to calculate the index of this type "T" among the ```Types ...```. 
+The template function ```type_index <T, Types ...> ()``` does this for us and implements it as follows:
+
+
+```cpp
+template<std::size_t Offset,typename Type,typename ...Types>
+struct type_index_helper;
+
+template<std::size_t Offset,typename Type,typename Head,typename ... Rests>
+struct type_index_helper<Offset,Type,Head,Rests...>{
+	static constexpr std::size_t value = type_index_helper<Offset+1,Type,Rests...>::value;
+};
+
+template<std::size_t Offset,typename Type,typename ... Rests>
+struct type_index_helper<Offset,Type,Type,Rests...>{
+	static constexpr std::size_t value = Offset;
+};
+
+template<std::size_t Offset,typename Type>
+struct type_index_helper<Offset,Type>{
+	static constexpr std::size_t value = Offset;
+};
+
+template<typename Type,typename ... Types> 
+constexpr std::size_t type_index() {
+	return type_index_helper<0,Type,Types...>::value;
+}
+
+```
+
+So far so good, at the beginning of this post, we assume that all of our types can be default constructible, but we can relax this assumption by writing a non-standard constructor.
+We can also implement the "emplace" method function through the non-standard constructor.
+Take a look at the following blocks of code:
+
+```cpp
+template <typename T, typename ... Ts>
+struct construct_visitor {
+	std::tuple<Ts...> ts;
+	construct_visitor(const Ts& ... ts):ts(ts...){};
+
+	void operator()(T& data) const {
+		::new(&data) T(std::get<Ts>(ts)...);
+	}
+
+	template <typename U>
+	void operator () (U&) const {}
+};
+
+template <typename ... Types>
+struct Variant {
+	static constexpr auto invalid_index = sizeof...(Types);
+	alignas( std::max({alignof(Types)...}) ) char data [ std::max({1ul, sizeof(Types)...}) ];
+	int index;
+
+	template <typename T, typename ... Ts, typename std::enable_if< type_index<std::decay_t<T>, Types...>() < invalid_index , int>::type = 0 >
+	void emplace(Ts&&...vs){
+		const auto other_index = type_index<std::decay_t<T>, Types...>();
+		if(index != invalid_index){
+			destroy();
+		}
+		index = other_index;
+		Visit(construct_visitor<std::decay_t<T>,Ts...>{std::forward<Ts>(vs)...},*this);
+	}
+};
+```
+
+In order to relax the entire variant class and accept all non-default constructibale types, we should also change the above functions for copying and moving elements, but I leave it up to you as a task!
+Here is our complete list of variant class visit and visitors.
+
+```cpp
+#include <iostream>
+#include <algorithm>
+#include <type_traits>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
+#include <cassert>
+#include <tuple>
+
+template <typename ... Types>
+struct Variant;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename Functor>
+using VisitorSignature = void(Functor, void*);
+
+template <typename Functor>
+using VisitorSignatureCopy = void(Functor, void*,const void*);
+
+template <typename Functor>
+using VisitorSignatureMove = void(Functor, void*, void*);
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+struct Visitor {
+	static const std::function<VisitorSignature<Functor>> actionArray[sizeof...(Types)];
+	static const std::function<VisitorSignatureCopy<Functor>> actionArrayCopy[sizeof...(Types)];
+	static const std::function<VisitorSignatureMove<Functor>> actionArrayMove[sizeof...(Types)];
+
+	void visit(Functor functor, Variant<Types...>& obj) const {
+		actionArray[obj.index](functor,obj.data);
+	}
+	void visit(Functor functor, Variant<Types...>& obj1,const Variant<Types...>& obj2) const {
+		actionArrayCopy[obj1.index](functor,obj1.data,obj2.data);
+	}
+	void visit(Functor functor, Variant<Types...>& obj1,Variant<Types...>&& obj2) const {
+		actionArrayMove[obj1.index](functor,obj1.data,obj2.data);
+	}
+};
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+const std::function<VisitorSignature<Functor>> Visitor<RV,Functor,Types...>::actionArray[sizeof...(Types)] = {RV<Types>()...};
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+const std::function<VisitorSignatureCopy<Functor>> Visitor<RV,Functor,Types...>::actionArrayCopy[sizeof...(Types)] = {RV<Types>()...};
+
+template <template <typename> class RV,typename Functor, typename ... Types>
+const std::function<VisitorSignatureMove<Functor>> Visitor<RV,Functor,Types...>::actionArrayMove[sizeof...(Types)] = {RV<Types>()...};
+
+template <typename T>
+struct TypeCastVisitor {
+
+	template <typename Functor>
+	void operator () (Functor functor, void* data) const {
+		functor(*reinterpret_cast<T*>(data));
+	}
+
+	template <typename Functor>
+	void operator () (Functor functor, void* data1, const void* data2) const {
+		functor(*reinterpret_cast<T*>(data1),*reinterpret_cast<const T*>(data2));
+	}
+
+	template <typename Functor>
+	void operator () (Functor functor, void* data1, void* data2) const {
+		functor(*reinterpret_cast<T*>(data1),static_cast<T&&>(*reinterpret_cast<T*>(data2)));
+	}
+};
+
+template <typename ... Types, typename Functor>
+void Visit(Functor functor, Variant<Types...>& obj){
+	Visitor<TypeCastVisitor,Functor,Types...> visitor;
+	visitor.visit(functor,obj);
+}
+template <typename ... Types, typename Functor>
+void Visit(Functor functor, Variant<Types...>& obj1,const Variant<Types...>& obj2){
+	Visitor<TypeCastVisitor,Functor,Types...> visitor;
+	visitor.visit(functor,obj1,obj2);
+}
+template <typename ... Types, typename Functor>
+void Visit(Functor functor, Variant<Types...>& obj1,Variant<Types...>&& obj2){
+	Visitor<TypeCastVisitor,Functor,Types...> visitor;
+	visitor.visit(functor,obj1,std::move(obj2));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct default_construct_visitor {
+	template <typename T>
+	void operator()(T& data) const {
+		::new(&data) T();
+	}
+};
+
+template <typename T, typename ... Ts>
+struct construct_visitor {
+	std::tuple<Ts...> ts;
+	construct_visitor(const Ts& ... ts):ts(ts...){};
+
+	void operator()(T& data) const {
+		::new(&data) T(std::get<Ts>(ts)...);
+	}
+
+	template <typename U>
+	void operator () (U&) const {}
+};
+
+struct destroy_visitor {
+	template <typename T>
+	void operator()(T& data) const {
+		data.~T();
+	}
+};
+
+template <typename T>
+struct set_visitor {
+	T temp;
+	set_visitor(const T& temp):temp(temp){}
+	void set(const T& t){ temp = t; }
+
+	void operator()(T& data) const {
+		data =  temp;
+	}
+
+	template <typename U>
+	void operator () (U&) const {}
+};
+
+struct copy_visitor {
+	template <typename T>
+	void operator()(T& data1,const T& data2) const {
+		data1 =  data2;
+	}
+};
+
+struct move_visitor {
+	template <typename T>
+	void operator()(T& data1,T&& data2) const {
+		data1 =  std::move(data2);
+	}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<std::size_t Offset,typename Type,typename ...Types>
+struct type_index_helper;
+
+template<std::size_t Offset,typename Type,typename Head,typename ... Rests>
+struct type_index_helper<Offset,Type,Head,Rests...>{
+	static constexpr std::size_t value = type_index_helper<Offset+1,Type,Rests...>::value;
+};
+
+template<std::size_t Offset,typename Type,typename ... Rests>
+struct type_index_helper<Offset,Type,Type,Rests...>{
+	static constexpr std::size_t value = Offset;
+};
+
+template<std::size_t Offset,typename Type>
+struct type_index_helper<Offset,Type>{
+	static constexpr std::size_t value = Offset;
+};
+
+template<typename Type,typename ... Types> 
+constexpr std::size_t type_index() {
+	return type_index_helper<0,Type,Types...>::value;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename ... Types>
+struct Variant {
+	static constexpr auto invalid_index = sizeof...(Types);
+	alignas( std::max({alignof(Types)...}) ) char data [ std::max({1ul, sizeof(Types)...}) ];
+	int index;
+
+	Variant():index(invalid_index){
+	}
+	~Variant(){
+		destroy();
+	}
+	Variant(const Variant& v){
+		Copy(v);
+	}
+	Variant& operator= (const Variant& v){
+		Copy(v);
+		return *this;
+	}
+	Variant(Variant&& v){
+		Move(std::move(v));
+	}
+	Variant& operator= (Variant&& v){
+		Move(std::move(v));
+		return *this;
+	}
+
+	template <typename T, typename std::enable_if< type_index<std::decay_t<T>, Types...>() < invalid_index , int>::type = 0>
+	Variant(T &&val) {
+		index = type_index<std::decay_t<T>, Types...>();
+		Visit(construct_visitor<std::decay_t<T>,std::decay_t<T>>{std::forward<T>(val)},*this);
+	}
+
+	template <typename T, typename std::enable_if< type_index<std::decay_t<T>, Types...>() < invalid_index , int>::type = 0>
+	Variant& operator= (T &&val) {
+		const auto other_index = type_index<std::decay_t<T>, Types...>();
+		if(index != other_index){
+			destroy();
+			index = other_index;
+			Visit(default_construct_visitor{},*this);
+		}
+		Visit(set_visitor<std::decay_t<T>>{std::forward<T>(val)},*this);
+		return *this;
+	}
+
+	template <typename T, typename ... Ts, typename std::enable_if< type_index<std::decay_t<T>, Types...>() < invalid_index , int>::type = 0 >
+	void emplace(Ts&&...vs){
+		const auto other_index = type_index<std::decay_t<T>, Types...>();
+		if(index != invalid_index){
+			destroy();
+		}
+		index = other_index;
+		Visit(construct_visitor<std::decay_t<T>,Ts...>{std::forward<Ts>(vs)...},*this);
+	}
+
+	void Copy(const Variant& v){
+		if(index != v.index){
+			destroy();
+			index = v.index;
+			Visit(default_construct_visitor{},*this);
+		}
+		Visit(copy_visitor{},*this,v);
+	}
+	void Move(Variant&& v){
+		if(index != v.index){
+			destroy();
+			index = v.index;
+			Visit(default_construct_visitor{},*this);
+		}
+		Visit(move_visitor{},*this,std::move(v));
+	}
+	void destroy(){
+		if(index < invalid_index){
+			Visit(destroy_visitor{},*this);
+			index = invalid_index;
+		}
+	}
+};
+
+int main(){
+	Variant<int,std::string> obj1 = std::string("Hi");
+	Variant<int,std::string> obj2;
+
+	obj2=10;
+
+	Visit([](auto& data){std::cout << data << std::endl;}
+	,obj1);
+
+	Visit([](auto& data){std::cout << data << std::endl;}
+	,obj2);
+
+
+	obj2 = std::move(obj1);
+
+	Visit([](auto& data){std::cout << data << std::endl;}
+	,obj1);
+
+	Visit([](auto& data){std::cout << data << std::endl;}
+	,obj2);
+
+
+	obj1.emplace<std::string>(5,'x');
+	Visit([](auto& data){std::cout << data << std::endl;}
+	,obj1);
+}
+
+```
 ## References
 * [Everything You Need to Know About std::variant from C++17 ](https://www.bfilipek.com/2018/06/variant.html)
 * [std::variant Doesn't Let Me Sleep](https://pabloariasal.github.io/2018/06/26/std-variant/)

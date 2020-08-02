@@ -15,6 +15,9 @@ Have you ever wished you could return more than one item from a function?
 ```std::tuple``` is the answer!
 
 <!--more-->
+Table of Contents
+* TOC
+{:toc}
 
 You can say that good design can solve the problem and I agree, in some cases it will.
 
