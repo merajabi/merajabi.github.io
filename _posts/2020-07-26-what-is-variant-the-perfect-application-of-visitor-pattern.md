@@ -1,7 +1,7 @@
 ---
 layout: post
 comments: true
-title: What is variant, The perfect application of visitor pattern
+title: What is variant? A perfect application of visitor pattern
 tags: [union, variant, visitor, variadic, design pattern, C++]
 color: black
 author: raha
@@ -15,7 +15,11 @@ Do you remember the union construct in C language? As of C++11, you can use any 
 
 <!--more-->
 
+## Introduction
+
 In this tutorial, I will explain why implementing "variant" is difficult and how we can solve it using the visitor design pattern.
+I have often seen many sample applications of visitor patterns that are easier to solve directly, but this time I couldn't think of an easier solution, so you will see the true power of the visitor pattern.
+
 Before we proceed, however, you should review these references to sharpen your mind.
 
 Read Stroustrup's page on C++11FAQ about union to remember about union.
