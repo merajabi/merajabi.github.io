@@ -11,8 +11,10 @@ category: programming/CPP
 excerpt_separator: <!--more-->
 ---
 
-
+In this post, I will go through the implementation of ```thread``` class similar to ```std::thread``` in c++11.
 <!--more-->
+and try to reproduce examples from Herb Sutter's introduction to multithreading to demonstrate the compatibility of this interface with C++11.
+
 Table of Contents
 * TOC
 {:toc}
@@ -23,8 +25,7 @@ I am trying to implement a very simple header-only library that offers compilers
 
 [ModernCPP](https://github.com/merajabi/ModernCPP), which is hosted on Github, is the result of this effort. It is a wrapper around the Linux implementation of POSIX threads.
 
-In this post, I will go through the implementation of ```thread``` class similar to ```std::thread``` and try to reproduce examples from Herb Sutter's introduction to multithreading to demonstrate the compatibility of this interface with C++11.
-
+ModernCPP supports types with functionality such as thread, atomic, mutex, lock_guard, bind, unique_ptr, SmartGuard, move, ref and a few more tools and constucts, all compatible with C++98.
 
 ## Implementation details
 
