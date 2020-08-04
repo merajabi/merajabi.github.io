@@ -361,7 +361,7 @@ In the main function I also showed how to use Lambda as a visitor.
 
 So far I have implemented the building blocks for creating a Variant class. But as you can see, we still do the bookkeeping by hand. As you may suspect, the rest is straightforward. We will call these visitors in the variant member function to automate the process.
 
-In the next post I will present a more complete implementation of the variant class.
+In the next section I will present a more complete implementation of the variant class.
 
 ```cpp
 #include <iostream>
