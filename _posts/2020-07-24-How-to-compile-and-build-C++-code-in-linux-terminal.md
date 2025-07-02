@@ -333,5 +333,5 @@ now we can run our program by simply typing it's name.
 $ ./myapp
 
 ```
-
-
+## References
+* [Lec 4 | MIT 6.033 Computer System Engineering, Spring 2005](https://www.youtube.com/watch?v=zm2VP0kHl1M&list=PL6535748F59DCA484)
