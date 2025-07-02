@@ -193,10 +193,6 @@ This clear separation makes it impossible to confuse success and failure at runt
         MR_ASSERT(!has_value());
         return std::get<1>(storage_).error();
     }
-    const E& error() const & {
-        MR_ASSERT(!has_value());
-        return std::get<1>(storage_).error();
-    }
 ```
 ---
 
