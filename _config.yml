@@ -8,13 +8,13 @@ youtube_username: merajabi
 google_verify: h6xODxfFqdjCih9XLzL0hHnGMuOVJJFzbj90OOCVimA
 
 # THEME-SPECIFIC CONFIGURATION
-title: Raha's Blog                                    # site's title
+title: Ryan's Blog                                    # site's title
 description: "This is my personal blog, I will share about life, brain, programming and what I found  interesting."      # used by search engines
 avatar: assets/img/triangle.png                         # Empty for no avatar in navbar
 favicon: assets/favicon.ico                             # Icon displayed in the tab
 
 # Header and footer text
-header_text: Welcome to Raha's Blog  # Change Blog header text
+header_text: Welcome to my Blog  # Change Blog header text
 header_feature_image: assets/img/pexels/triangular.jpeg
 footer_text: >
   Powered by <a href="https://jekyllrb.com/">Jekyll</a> with <a href="https://github.com/sylhare/Type-on-Strap">Type on Strap</a>
