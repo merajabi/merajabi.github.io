@@ -4,7 +4,7 @@ comments: true
 title: How to compile and build C++ code in linux terminal
 tags: [C++, g++, clang, compile, build, link, static library, shared library]
 color: black
-author: raha
+author: Ryan
 feature-img: "assets/img/pexels/desk-messy.jpeg"
 thumbnail: "assets/thumbnails/pexels/desk-messy.jpeg"
 category: programming/CPP
