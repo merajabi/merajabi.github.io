@@ -4,7 +4,7 @@ comments: true
 title: Using and Implementing expected and unexpected with std::variant
 tags: [expected, unexpected, union, variant, C++]
 color: black
-author: raha
+author: Ryan
 feature-img: "assets/img/pexels/pexels-expected-1920x1280.jpg"
 thumbnail: "assets/thumbnails/pexels/pexels-expected-960x640.jpg"
 category: programming/CPP

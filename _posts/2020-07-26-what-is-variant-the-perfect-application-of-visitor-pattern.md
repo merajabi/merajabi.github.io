@@ -4,7 +4,7 @@ comments: true
 title: What is variant? A perfect application of visitor pattern
 tags: [union, variant, visitor, variadic, design pattern, C++]
 color: black
-author: raha
+author: Ryan
 feature-img: "assets/img/pexels/pexels-pixabay-1920x1280.jpg"
 thumbnail: "assets/thumbnails/pexels/pexels-pixabay-960x640.jpg"
 category: programming/CPP

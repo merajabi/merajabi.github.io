@@ -4,7 +4,7 @@ comments: true
 title: How thread interface is implemented in c++11
 tags: [union, variant, visitor, variadic, design pattern, C++]
 color: black
-author: raha
+author: Ryan
 feature-img: "assets/img/pexels/pexels-skitterphoto-1920x1280.jpg"
 thumbnail: "assets/thumbnails/pexels/pexels-skitterphoto-960x640.jpg"
 category: programming/CPP
