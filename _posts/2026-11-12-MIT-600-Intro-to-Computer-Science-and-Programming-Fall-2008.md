@@ -22,6 +22,9 @@ Designed for beginners with little to no coding experience, this Python-based co
 {:toc}
 
 
+<div class="responsive-embed">
+  <iframe src="https://www.youtube.com/playlist?list=PL4C4720A6F225E074" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+</div>
 
 ### 1. The Problem with Naive Recursion (Overlapping Sub-problems)
 
