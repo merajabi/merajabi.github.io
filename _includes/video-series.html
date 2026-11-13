@@ -1,0 +1,59 @@
+{% assign vids = nil %}
+{% if include.list %}
+  {% assign vids = site.data.videos[include.list] %}
+{% else %}
+  {% assign vids = page.videos %}
+{% endif %}
+
+{% if vids and vids.size > 0 %}
+  {% assign first_url = vids[0].url %}
+  {% capture first_id %}{% include youtube-id.html url=first_url %}{% endcapture %}
+  {% assign first_id = first_id | strip %}
+
+  <div class="video-series" dir="ltr">
+    <div class="video-player">
+      <iframe id="series-player"
+              src="https://www.youtube.com/embed/{{ first_id }}?rel=0"
+              title="{{ vids[0].title }}"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen></iframe>
+    </div>
+
+    <ol class="series-list" data-target="series-player">
+      {% for v in vids %}
+        {% assign v_url = v.url %}
+        {% capture vid %}{% include youtube-id.html url=v_url %}{% endcapture %}
+        {% assign vid = vid | strip %}
+        <li>
+          <a href="#"
+             data-vid="{{ vid }}"
+             data-title="{{ v.title }}"
+             class="{% if forloop.first %}active{% endif %}">
+            <span class="num">{{ forloop.index }}.</span>
+            <span class="title">{{ v.title }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  <script>
+  (function () {
+    var list = document.querySelector('.series-list[data-target="series-player"]');
+    if (!list) return;
+    var player = document.getElementById('series-player');
+    list.addEventListener('click', function (e) {
+      var a = e.target.closest('a[data-vid]');
+      if (!a) return;
+      e.preventDefault();
+      player.src = 'https://www.youtube.com/embed/' + a.dataset.vid + '?rel=0&autoplay=1';
+      player.title = a.dataset.title;
+      list.querySelectorAll('a').forEach(function (el) { el.classList.remove('active'); });
+      a.classList.add('active');
+    });
+  })();
+  </script>
+{% else %}
+  <p><em>No videos configured for this page.</em></p>
+{% endif %}
