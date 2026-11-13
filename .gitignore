@@ -32,3 +32,7 @@ assets/package-lock.json
 
 #My Data
 Data/
+
+# bundle Gems
+vendor/
+
