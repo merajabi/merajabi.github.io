@@ -1,0 +1,7 @@
+{%- assign u = include.url | strip -%}
+{%- assign id = u | split: 'youtu.be/' | last -%}
+{%- if id == u -%}
+  {%- assign id = u | split: 'v=' | last -%}
+{%- endif -%}
+{%- assign id = id | split: '?' | first | split: '&' | first | split: '/' | first -%}
+{{- id -}}
